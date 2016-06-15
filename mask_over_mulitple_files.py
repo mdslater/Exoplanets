@@ -25,6 +25,8 @@
   data_path="cor_Data.txt"
   list_data=list(open(data_path,"r+"))
   n_data=len(list_data)
+  cor_data=[]
+  cor_head=[]
   
   for i in range(n_data):
   	path=list_data[i]
