@@ -14,33 +14,26 @@
   
   #define function that finds radius of star
   def dist(x, y, xx, yy):
-    x = x * 1.
-	  y = y * 1.
-	  xx = xx * 1.
-  	yy = yy * 1.
-  
-  	return np.sqrt((yy-y)**2+(xx-x)**2) 
-  
-  #txt file has cor_Data files#
-  data_path="cor_Data.txt"
-  list_data=list(open(data_path,"r+"))
-  n_data=len(list_data)
-  cor_data=[]
-  cor_head=[]
-  
-  for i in range(n_data):
-  	path=list_data[i]
-  	path=path.rstrip()
-  	hdulist=pyfits.open(path) * 1
-  	dataset=hdulist[0].data * 1
-  	header=hdulist[0].header
-  	cor_data.append(dataset)
-  	cor_head.append(header)
+	x = x * 1.
+	y = y * 1.
+	xx = xx * 1.
+	yy = yy * 1.
 
+	return np.sqrt((yy-y)**2+(xx-x)**2) 
 
+  with open('cor_Data.txt') as f:
+	fitfiles=f.read().split()
+
+  for fitfile in fitfiles:
+	with open(fitfile) as f:
+		data_path=fitfile		
+		
+  hdulist=pyfits.open(data_path) * 1
+  dataset=hdulist[0].data * 1
+  header=hdulist[0].header
   #create mask#
-  for i in range(n_data):
-  	mask=dataset * 1
+  mask=dataset * 1
+
     
   #make mask field all 0s#
   mask=np.multiply(mask,0.0)
@@ -140,14 +133,8 @@
   			condition = False
   
   #combine x,y,radius into one list
-  new_radii=[]
-  for r in radius:
-  	if r!=0:
-  		new_radii.append(r)
-  coordinates_and_radii=zip(y,x,radius)
-  
-  print coordinates_and_radii[i]
-  
+  coordinates_and_radii=zip([(i,j,r) for i,j,r in zip(x,y,radius) if r!=0])
+
   
   #create circle around each star
   area=[]
@@ -173,5 +160,6 @@
   					total+=dataset[x[i]+n1,y[i]+n2]
   	total_flux.append(total)
   	total=0.
-  
+  total_flux=[j for j in total_flux if j != 0]
+
       
