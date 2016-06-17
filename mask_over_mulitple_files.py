@@ -136,9 +136,24 @@
  					radius.append(max(dist_array))
  					condition = False
  		
-		#combine x,y,radius into one list
-		coordinates_and_radii=zip([(i,j,r) for i,j,r in zip(x,y,radius) if r!=0])
-				  
+		#delete x,y,r for r=0
+		new_x=[]
+		new_y=[]
+		new_radius=[]
+		for i in range(len(x)):
+			if radius[i] != 0:
+				new_x.append(x[i])
+		for i in range(len(y)):
+			if radius[i] != 0:
+				new_y.append(y[i])
+
+		for i in range(len(radius)):
+			if radius[i] != 0:
+				new_radius.append(radius[i])
+		x=new_x
+		y=new_y
+		radius=new_radius
+		coordinates_and_radii=zip(x,y,radius)	  
 		
 		
 		#calculate for fluxes of each star
@@ -158,27 +173,32 @@
 			total=0.
 		
 		total_flux=[j for j in total_flux if j != 0]
-		
+
+		#combine all data
+		coord_rad_flux=zip(x,y,radius,total_flux)
 		#get time and date for each file
 		time=[]
 		date=[]
 		time.append(header["TIME-OBS"])
 		date.append(header["DATE-OBS"])
 		for i in range(len(time)):		
-			total_flux.insert(0,date[0])
-		for i in range(len(date)):
-			total_flux.insert(0,time[0])
+			time.insert(0,date[0])
 
 		
 
 		#write the fluxes for each fits file onto a csv file
 		with open('fluxes.csv','a')as fd:
 			writer=csv.writer(fd)
-			writer.writerow(total_flux)
+			writer.writerow(time)		
+		with open('fluxes.csv','a')as fd:
+			writer=csv.writer(fd)
+			for val in coord_rad_flux:
+				writer.writerow(val)
 		with open('xyr.csv','a')as fd:
 			writer=csv.writer(fd)
 			writer.writerow(coordinates_and_radii)
-		print len(x)
+		
+		
 	mask=0.
 	thrs=0.
 	y_size=0
