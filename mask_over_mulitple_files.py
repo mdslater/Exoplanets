@@ -194,9 +194,7 @@
 			writer=csv.writer(fd)
 			for val in coord_rad_flux:
 				writer.writerow(val)
-		with open('xyr.csv','a')as fd:
-			writer=csv.writer(fd)
-			writer.writerow(coordinates_and_radii)
+
 		
 		
 	mask=0.
