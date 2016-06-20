@@ -233,14 +233,12 @@
 			time.insert(0,date[0])
 		
 
-		#take out extra stars
-		x_stars=[]
-		y_stars=[]
-
-		if fitfile == 'cor_Data_0000.fits':		
-			for i in range(len(x)):
-				x_stars.append(x[i])
-				y_stars.append(y[i])
+		#define coordinates for stars found in the first fits file
+		#just run the code for the first fits file with an added print x and print y line
+		#and copy and paste the lists here
+		x_stars= [164, 475, 542, 611, 717, 1004, 1307, 1309, 1445, 1643, 1715, 1739, 1780, 1834, 1920, 1950, 2061, 2190, 2225, 2237, 2798, 2993, 3102, 3127, 3482, 3487, 3676, 3774, 3858]
+		y_stars= [2696, 991, 1165, 2677, 163, 617, 3239, 643, 2625, 747, 2618, 3328, 3167, 1514, 3668, 519, 1388, 1847, 1300, 658, 972, 591, 367, 1874, 1894, 2118, 3080, 387, 1120]
+	
 		n_x=[]
 		n_y=[]
 		n_radius=[]
@@ -255,6 +253,9 @@
 						n_flux.insert(0,total_flux[i])
 
 
+		#combine all data
+		coord_rad_flux=zip(n_x,n_y,n_radius,n_flux)
+		
 		#write the fluxes for each fits file onto a csv file
 		with open('fluxes.csv','a')as fd:
 			writer=csv.writer(fd)
