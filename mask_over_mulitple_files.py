@@ -1,20 +1,20 @@
-  import pyfits
-  import numpy as np
-  import os
-  import sys
-  import scipy.ndimage as snd
-  import csv
-  import astropy.table
-  import astropy.units as u
-  import math
-  import scipy.integrate as integrate
-  import scipy.special as special
-  from scipy.integrate import quad, dblquad
-  from scipy import integrate
-  from astropy.time import Time
+import pyfits
+import numpy as np
+import os
+import sys
+import scipy.ndimage as snd
+import csv
+import astropy.table
+import astropy.units as u
+import math
+import scipy.integrate as integrate
+import scipy.special as special
+from scipy.integrate import quad, dblquad
+from scipy import integrate
+from astropy.time import Time
 
-  #define function that finds radius of star
-  def dist(x, y, xx, yy):
+#define function that finds radius of star
+def dist(x, y, xx, yy):
 	x = x * 1.
 	y = y * 1.
 	xx = xx * 1.
@@ -319,8 +319,8 @@ for file_nr,fitfile in enumerate(fitfiles):
 	radius=[]
 	labels=[]
 
-  #write the master table of the x values, y values, radii, and fluxes into a csv file	
-  with open('master_table.csv','a')as fd:
+#write the master table of the x values, y values, radii, and fluxes into a csv file	
+with open('master_table.csv','a')as fd:
 	writer=csv.writer(fd)
 	for val in master_table:
 		writer.writerow(val)
