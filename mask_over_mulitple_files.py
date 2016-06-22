@@ -13,8 +13,8 @@
   from scipy import integrate
   from astropy.time import Time
 
-#define function that finds radius of star
-def dist(x, y, xx, yy):
+  #define function that finds radius of star
+  def dist(x, y, xx, yy):
 	x = x * 1.
 	y = y * 1.
 	xx = xx * 1.
