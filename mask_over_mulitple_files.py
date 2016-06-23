@@ -13,6 +13,69 @@ from scipy.integrate import quad, dblquad
 from scipy import integrate
 from astropy.time import Time
 
+
+#define function to write master table
+def get_next_pos(master_table_var,shift_y,shift_x,it_max,y1,x1,radius,flux,master_ident,master_y1,master_x1,master_r,master_flux,master_count):
+
+	y1=int(y1+y_shift)
+	x1=int(x1+x_shift)
+	y_new = 1000.
+	x_new = 1000.
+	check1= False
+	check2 = False
+	for i, test_id in enumerate(master_ident):	
+		for it_no in range(it_max+1):
+			
+			if y1 + it_no == master_y1[i] and y_new == 1000.:
+				check1 = True
+				y_new = (y1 + it_no) * 1.	
+				#print 'test1'
+				#print y_new
+			elif y1 - it_no == master_y1[i] and y_new == 1000.:
+				check1 = True
+				y_new = (y1 - it_no) * 1.
+				#print 'test2'
+			if x1 + it_no == master_x1[i] and x_new == 1000.:
+				check2 = True
+				x_new = (x1 + it_no) * 1.
+				#print 'test3'
+			elif x1 - it_no == master_x1[i] and x_new == 1000.:
+				check2 = True
+				x_new = (x1 - it_no) * 1.
+				#print 'test4'
+			if check1 == True and check2 == True:
+				star_id = master_ident[i]
+				master_count[i] += 1
+		#print 'test5'
+				break
+		if check1 == True and check2 == True:
+			break	
+	
+		y_new = 1000.
+		x_new = 1000.
+		check1= False
+		check2 = False
+		
+		
+	if y_new == 1000. or x_new == 1000.:	
+		print 'test6'
+		y_new = int((y1 - y_shift) * 1.)
+		x_new = int((x1 - x_shift) * 1.)
+		star_id=len(master_ident)+1
+		master_ident.append(star_id)	
+		master_y1.append(y_new)
+		master_x1.append(x_new)
+		master_r.append(radius)
+		master_flux.append(flux)
+		master_count.append(1)
+	#master_table_var=zip(master_ident,master_y1,master_x1,master_r,master_flux,master_count)
+	master_table_var=[master_ident,master_y1,master_x1,master_r,master_flux,master_count]
+
+	return star_id, y_new, x_new, radius, flux, master_table_var
+
+
+
+
 #define function that finds radius of star
 def dist(x, y, xx, yy):
 	x = x * 1.
@@ -22,7 +85,7 @@ def dist(x, y, xx, yy):
 
 	return np.sqrt((yy-y)**2+(xx-x)**2) 
 
-	
+id_flux=[]	
 
 #set a variable equal to your file#
 with open('cor_Data.txt') as f:
@@ -183,7 +246,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 			total=0.
 		
 		total_flux=[j for j in total_flux if j != 0]
-
+		
 
 		#get time and date for each file
 		time=[]
@@ -193,120 +256,80 @@ for file_nr,fitfile in enumerate(fitfiles):
 		for i in range(len(time)):		
 			time.insert(0,date[0])
 
-		#create list to separate data in fluxes document
-		data_separater=[]
 
-		#create information table for each file		
-		ids=range(1,len(x)+1)
+
+
 
 		if file_nr==0:
 			#create master-table
-			master_x=x
-			master_y=y
-			master_radius=radius
-			master_flux=total_flux
-			sum_elements=[0] * len(master_x)
-
-		
-		iter_x=[]
-		iter_y= []
-		iter_run=range(-5,6)
-		for i in range(len(master_x)):	
-			iter_x.append(master_x[i]-5)
-			iter_x.append(master_x[i]-4)
-			iter_x.append(master_x[i]-3)
-			iter_x.append(master_x[i]-2)
-			iter_x.append(master_x[i]-1)
-			iter_x.append(master_x[i])
-			iter_x.append(master_x[i]+1)
-			iter_x.append(master_x[i]+2)
-			iter_x.append(master_x[i]+3)
-			iter_x.append(master_x[i]+4)
-			iter_x.append(master_x[i]+5)
-		for i in range(len(master_y)):	
-			iter_x.append(master_y[i]-5)
-			iter_x.append(master_y[i]-4)
-			iter_x.append(master_y[i]-3)
-			iter_x.append(master_y[i]-2)
-			iter_x.append(master_y[i]-1)
-			iter_x.append(master_y[i])
-			iter_x.append(master_y[i]+1)
-			iter_x.append(master_y[i]+2)
-			iter_x.append(master_y[i]+3)
-			iter_x.append(master_y[i]+4)
-			iter_x.append(master_y[i]+5)
-		#counting the number of times each star is seen in all the fits files			
-		for i in range(len(master_x)):
-			for j in range(len(x)):		
-				for k in iter_run:
-					if master_x[i] in range(x[j] - iter_run[k],x[j]+1+iter_run[k]):
-						if master_y[i] in range(y[j] - iter_run[k], y[j] + 1 + iter_run[k]):
-							sum_elements[i] += 1
-							break
-	
-
-		#create lists for x, y, radius, and flux for stars that show up in the previous file as 		well as the current file in order to take into account the movement of the sky
-		n_x=[]
-		n_y=[]
-		n_radius=[]
-		n_flux=[]
-
+			master_id=range(len(x))
+			master_y=y * 1
+			master_x=x * 1
+			master_radius=radius * 1 
+			master_flux=total_flux * 1 
+			sum_elements=[1] * len(master_x)
+			master_table=zip(master_id,master_y,master_x,master_radius,master_flux,sum_elements)
+			max_flux=0.
+			for ii,fluxx in enumerate(master_flux):
+				if fluxx > max_flux:
+					max_flux=fluxx
+					y_zerop = y[ii] * 1.
+					x_zerop = x[ii] * 1.
+					
+			y_shift = 0
+			x_shift = 0
 			
-		#only taking data from stars that appear in the previous image in order to remove data
-		#from background noise
-		if file_nr !=0:
-			for i in range(len(x)):
-				for j in range(len(x_stars)):
-					for k in iter_run:
-						if x[i] in range(x_stars[j] - iter_run[k],x_stars[j]+1+iter_run[k]):
-							if y[i] in range(y_stars[j] - iter_run[k], y_stars[j] + 1 + iter_run[k]):
-								n_x.insert(0,x[i])
-								n_y.insert(0,y[i])
-								n_radius.insert(0,radius[i])
-								n_flux.insert(0,total_flux[i])
-								break
-
-									
-			#add the extra stars into master list, later we will decide they are background 			#noise	
-			for i in range(len(x)):
-					if x[i] not in iter_x and y[i] not in iter_y:
-						master_x.append(x[i])
-						master_y.append(y[i])
-						master_radius.append(radius[i])
-						master_flux.append(total_flux[i])
-						sum_elements.append(1)
-
-
+		#search where the pixel with the maximum intensity is located in each file
+		#we will use this location to calculate how much each pixel moved relative to the first 		#file
+		if file_nr!= 0:
+			max_flux=0.
+			for i,fluxx in enumerate(total_flux):
+				if fluxx > max_flux:
+					max_flux=fluxx
+					y_zerop_n = int(y[i])
+					x_zerop_n = int(x[i])
+			
+			#calculate the x and y shift relative to the first file	
+			y_shift = y_zerop_n-y_zerop
+			x_shift = x_zerop_n-x_zerop
+		print y_shift, x_shift
 		
+		
+
+
+
+
 		if file_nr == 0:
-			for i in range(len(x)):
-				id_flux=[total_flux[i]]
-		for i in range(len(x)):			
-			print id_flux
-
-			
-		#create a master table with info on each star that is found, including the number of 			times it is found out of all the files
-		master_table=zip(master_x,master_y,sum_elements)
-		
+			id_flux=[[] for _ in range(len(master_x))]
+			id_x=[[] for _ in range(len(master_x))]
+			id_y=[[] for _ in range(len(master_x))]
+			for i in range(len(master_x)):
+				id_flux[i].append(total_flux[i])
+				id_x[i].append(range(x[i]-5,x[i]+6))
+				id_y[i].append(range(y[i]-5,y[i]+6))
 
 
 
 
 
-		#combine all data
-		coord_rad_flux=zip(n_x,n_y,n_radius,n_flux)
-		
+
+
+		for i in range(len(y)):
+			master_table=get_next_pos(master_table,y_shift,x_shift,5,y[i],x[i],radius[i],total_flux[i],master_id,master_y,master_x,master_radius,master_flux,sum_elements)[5]
+			print master_table[5]
+
+
 		#write the x, y, radius, and flux values for each fits file onto a csv file	
 		with open('fluxes.csv','a')as fd:
 			writer=csv.writer(fd)
-			writer.writerow(time)	
-		with open('fluxes.csv','a')as fd:
-			writer=csv.writer(fd)
-			for val in coord_rad_flux:
-				writer.writerow(val)
-
+			writer.writerow(time)
+		#print master_table	
+		
 
 		
+
+
+
 		
 	mask=0.
 	thrs=0.
@@ -324,7 +347,9 @@ with open('master_table.csv','a')as fd:
 	writer=csv.writer(fd)
 	for val in master_table:
 		writer.writerow(val)
-		
+
+
+
 		
 		
 	
