@@ -404,7 +404,7 @@ with open('master_table.csv','a')as fd:
 	writer=csv.writer(fd)
 	for val in master_table:
 		writer.writerow(val)
-with open('star_fluxes.csv','a')as fd:
+with open('lists_fluxes_per_star.csv','a')as fd:
 	writer=csv.writer(fd)
 	for val in star_fluxes:
 		writer.writerow(val)
