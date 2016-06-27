@@ -1,3 +1,12 @@
+#====================================================
+#This script is used to find the total luminosity of each star in a group of images of the same star #field. It then outputs a csv file with the luminosity vs time tables for each star detected. From there, you can graph them and use their graphs to search for any exoplanets. 
+#Prepare a list ('cor_Data.txt') of your images that have already been corrected for darks and #flats.
+#Run this script in the folder of target images!!
+#====================================================
+
+#====================================================
+#          Loading necessary packages
+#====================================================
 import pyfits
 import numpy as np
 import os
@@ -13,12 +22,16 @@ from scipy.integrate import quad, dblquad
 from scipy import integrate
 from astropy.time import Time
 
+#====================================================
+#Defining functions that will be uses later on in the script
+#====================================================
 
 #define function to write master table
 def get_next_pos(master_table_var,shift_y,shift_x,it_max,y1,x1,radius,flux,master_ident,master_y1,master_x1,master_r,master_flux,master_count):
-
-	y1=int(y1+y_shift)
-	x1=int(x1+x_shift)
+	
+	y1=int(y1+shift_y) * 1.
+	x1=int(x1+shift_x) * 1. 
+	
 	y_new = 1000.
 	x_new = 1000.
 	check1= False
@@ -28,25 +41,24 @@ def get_next_pos(master_table_var,shift_y,shift_x,it_max,y1,x1,radius,flux,maste
 			
 			if y1 + it_no == master_y1[i] and y_new == 1000.:
 				check1 = True
-				y_new = (y1 + it_no) * 1.	
-				#print 'test1'
-				#print y_new
+				y_new = int(y1 + it_no)	
+				
 			elif y1 - it_no == master_y1[i] and y_new == 1000.:
 				check1 = True
-				y_new = (y1 - it_no) * 1.
-				#print 'test2'
+				y_new = int(y1 - it_no)
+				
 			if x1 + it_no == master_x1[i] and x_new == 1000.:
 				check2 = True
-				x_new = (x1 + it_no) * 1.
-				#print 'test3'
+				x_new = int(x1 + it_no)
+				
 			elif x1 - it_no == master_x1[i] and x_new == 1000.:
 				check2 = True
-				x_new = (x1 - it_no) * 1.
-				#print 'test4'
+				x_new = int(x1 - it_no)
+				
 			if check1 == True and check2 == True:
 				star_id = master_ident[i]
 				master_count[i] += 1
-		#print 'test5'
+		
 				break
 		if check1 == True and check2 == True:
 			break	
@@ -58,9 +70,9 @@ def get_next_pos(master_table_var,shift_y,shift_x,it_max,y1,x1,radius,flux,maste
 		
 		
 	if y_new == 1000. or x_new == 1000.:	
-		print 'test6'
-		y_new = int((y1 - y_shift) * 1.)
-		x_new = int((x1 - x_shift) * 1.)
+		
+		y_new = int((y1 + shift_y) * 1.)
+		x_new = int((x1 + shift_x) * 1.)
 		star_id=len(master_ident)+1
 		master_ident.append(star_id)	
 		master_y1.append(y_new)
@@ -68,11 +80,45 @@ def get_next_pos(master_table_var,shift_y,shift_x,it_max,y1,x1,radius,flux,maste
 		master_r.append(radius)
 		master_flux.append(flux)
 		master_count.append(1)
-	#master_table_var=zip(master_ident,master_y1,master_x1,master_r,master_flux,master_count)
+	
 	master_table_var=[master_ident,master_y1,master_x1,master_r,master_flux,master_count]
 
-	return star_id, y_new, x_new, radius, flux, master_table_var
+	return star_id, y_new, x_new, master_table_var, master_ident, master_y1, master_x1, master_r, master_flux, master_count
 
+
+#define function that creates a list of fluxes over time per star
+
+def flux_tables(shift_y,shift_x,it_max,y1,x1,flux,master_ident,master_y1,master_x1,time):
+	y1=int(y1+shift_y) * 1.
+	x1=int(x1+shift_x) * 1. 
+	y_new = 1000.
+	x_new = 1000.
+	check1= False
+	check2 = False
+	for i in range(len(master_ident)):
+		for it_no in range(it_max+1):
+			if y1 + it_no == master_y1[i] and y_new == 1000.:
+				check1 = True
+				y_new = int(y1 + it_no)	
+				
+			elif y1 - it_no == master_y1[i] and y_new == 1000.:
+				check1 = True
+				y_new = int(y1 - it_no)
+				
+			if x1 + it_no == master_x1[i] and x_new == 1000.:
+				check2 = True
+				x_new = int(x1 + it_no)	
+				
+			elif x1 - it_no == master_x1[i] and x_new == 1000.:
+				check2 = True
+				x_new = int(x1 - it_no)
+				break
+
+		if check1 == True and check2 == True:
+			star_fluxes[i].append(flux)
+			flux_time[i].append(time)
+			
+			break
 
 
 
@@ -85,7 +131,9 @@ def dist(x, y, xx, yy):
 
 	return np.sqrt((yy-y)**2+(xx-x)**2) 
 
-id_flux=[]	
+id_flux=[]
+star_fluxes= [[] for m in range(100)]	
+flux_time= [[] for m in range(100)]
 
 #set a variable equal to your file#
 with open('cor_Data.txt') as f:
@@ -112,8 +160,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 		
 		#make mask field all 0s#
 		mask=np.multiply(mask,0.0)
-		
-		thrs=(10 * np.std(dataset))
+		thrs = 10 * np.std(dataset)
 		
 		#define x and y values#
 		y_size=len(dataset)
@@ -255,6 +302,11 @@ for file_nr,fitfile in enumerate(fitfiles):
 		date.append(header["DATE-OBS"])
 		for i in range(len(time)):		
 			time.insert(0,date[0])
+		
+		#calibrate fluxes for each image by using every star as a calibrator
+		sum_of_fluxes=sum(total_flux)
+		for i in range(len(total_flux)):
+			total_flux[i]=total_flux[i]/sum_of_fluxes
 
 
 
@@ -267,7 +319,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 			master_x=x * 1
 			master_radius=radius * 1 
 			master_flux=total_flux * 1 
-			sum_elements=[1] * len(master_x)
+			sum_elements=[0] * len(master_x)
 			master_table=zip(master_id,master_y,master_x,master_radius,master_flux,sum_elements)
 			max_flux=0.
 			for ii,fluxx in enumerate(master_flux):
@@ -292,7 +344,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 			#calculate the x and y shift relative to the first file	
 			y_shift = y_zerop_n-y_zerop
 			x_shift = x_zerop_n-x_zerop
-		print y_shift, x_shift
+		
 		
 		
 
@@ -312,20 +364,21 @@ for file_nr,fitfile in enumerate(fitfiles):
 
 
 
-
-
 		for i in range(len(y)):
-			master_table=get_next_pos(master_table,y_shift,x_shift,5,y[i],x[i],radius[i],total_flux[i],master_id,master_y,master_x,master_radius,master_flux,sum_elements)[5]
-			print master_table[5]
+			master_table=get_next_pos(master_table,y_shift,x_shift,10,y[i],x[i],radius[i],total_flux[i],master_id,master_y,master_x,master_radius,master_flux,sum_elements)[5]
+		
 
+	
+		
 
+		for i in range(len(y)):		
+			flux_tables(y_shift,x_shift,10,y[i],x[i],total_flux[i],master_id,master_y,master_x,time)
+
+			
 		#write the x, y, radius, and flux values for each fits file onto a csv file	
 		with open('fluxes.csv','a')as fd:
 			writer=csv.writer(fd)
 			writer.writerow(time)
-		#print master_table	
-		
-
 		
 
 
@@ -342,11 +395,26 @@ for file_nr,fitfile in enumerate(fitfiles):
 	radius=[]
 	labels=[]
 
+
+
+master_table = zip(master_id,master_y,master_x,master_radius,master_flux,sum_elements)
+
 #write the master table of the x values, y values, radii, and fluxes into a csv file	
 with open('master_table.csv','a')as fd:
 	writer=csv.writer(fd)
 	for val in master_table:
 		writer.writerow(val)
+with open('star_fluxes.csv','a')as fd:
+	writer=csv.writer(fd)
+	for val in star_fluxes:
+		writer.writerow(val)
+with open('flux_times.csv','a')as fd:
+	writer=csv.writer(fd)
+	for val in flux_time:
+		writer.writerow(val)
+
+
+	
 
 
 
