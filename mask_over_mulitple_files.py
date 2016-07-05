@@ -82,8 +82,8 @@ def get_next_pos(master_table_var,shift_y,shift_x,it_max,y1,x1,radius,flux,maste
 #define function that creates a list of fluxes over time per star
 
 def flux_tables(shift_y,shift_x,it_max,y1,x1,flux,master_ident,master_y1,master_x1,time):
-	y_corr=int(y1-shift_y) * 1.
-	x_corr=int(x1-shift_x) * 1. 
+	y_corr=int(y1-shift_y)
+	x_corr=int(x1-shift_x) 
 	y_new = 1000.
 	x_new = 1000.
 	check1= False
@@ -121,29 +121,31 @@ def constant_radii(shift_y,shift_x,it_max,y1,x1,radius,master_ident,master_y1,ma
 	x_new = 1000.
 	check1= False
 	check2 = False
-	for i in range(len(master_ident)):
+	for j in range(len(master_x1)):
 		for it_no in range(it_max+1):
-			if y_corr + it_no == master_y1[i] and y_new == 1000.:
+			if y_corr + it_no == master_y1[j] and y_new == 1000.:
 				check1 = True
-				y_new = int(y_corr + it_no)	
 				
-			elif y_corr - it_no == master_y1[i] and y_new == 1000.:
+			elif y_corr - it_no == master_y1[j] and y_new == 1000.:
 				check1 = True
-				y_new = int(y_corr - it_no)
-				
-			if x_corr + it_no == master_x1[i] and x_new == 1000.:
+
+			if x_corr + it_no == master_x1[j] and x_new == 1000.:
 				check2 = True
-				x_new = int(x_corr + it_no)	
 				
-			elif x_corr - it_no == master_x1[i] and x_new == 1000.:
+			elif x_corr - it_no == master_x1[j] and x_new == 1000.:
 				check2 = True
-				x_new = int(x_corr - it_no)
+				
+			if check1 == True and check2 == True:
+				radius == master_radius[j]
+
 				break
 
 		if check1 == True and check2 == True:
-			radius = master_radius[i]
-			
 			break
+
+		check1= False
+		check2 = False
+			
 	return radius
 
 
@@ -167,6 +169,8 @@ with open('cor_Data.txt') as f:
 data_path=[]
 for file_nr,fitfile in enumerate(fitfiles):
 	with open(fitfile) as f:
+		print 'Current image:',
+		print fitfile
 		
 		#Identify the stars found in the previous image
 		x_stars=[]
@@ -187,6 +191,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 		#make mask field all 0s#
 		mask=np.multiply(mask,0.0)
 		thrs = 10 * np.std(dataset)
+		
 		
 		#define x and y values#
 		y_size=len(dataset)
@@ -280,6 +285,7 @@ for file_nr,fitfile in enumerate(fitfiles):
  					
  					radius.append(max(dist_array))
  					condition = False
+		#Radius checked with mask.fits file, they match up perfectly. Each y and x value are 1 			#pixel too small though due to the program default settings.
 		for i in range(len(radius)):
 			radius[i] = radius[i] * 2
  		
@@ -308,6 +314,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 		#calculate for fluxes of each star
 		total_flux=[]
 		total=0.
+			
 		
 		for i in range(len(radius)):		
 		  	if radius[i] > 0.:
@@ -321,7 +328,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 			total=0.
 		
 		total_flux=[j for j in total_flux if j != 0]	
-  
+  		#fluxes checked using ds9, they match up perfectly.
 	
 		if file_nr==0:
 			#create master-table
@@ -339,8 +346,8 @@ for file_nr,fitfile in enumerate(fitfiles):
 					y_zerop = y[ii] * 1.
 					x_zerop = x[ii] * 1.
 					
-			y_shift = 0
-			x_shift = 0
+			y_shift = 0.
+			x_shift = 0.
 			
 		#search where the pixel with the maximum intensity is located in each file
 		#we will use this location to calculate how much each pixel moved relative to the first 		#file
@@ -357,8 +364,34 @@ for file_nr,fitfile in enumerate(fitfiles):
 			x_shift = x_zerop_n-x_zerop
 		
 		#change the radius list for file_nr != 0 so that the same stars detected before have 			#the same radius. We do this so that fluxuations in the radius of the same star does 			#not cause any fluctiations in the fluxes.
-		for i in range(len(x)):
-			constant_radii(y_shift,x_shift,10,y[i],x[i],radius[i],master_id,master_y,master_x,master_radius)
+		#for i in range(len(x)):
+			#constant_radii(y_shift,x_shift,10,y[i],x[i],radius[i],master_id,master_y,master_x,master_radius)
+		check11 = False
+		check22 = False
+		for j in range(len(x)):
+			x_corrected = x[j] - x_shift
+			y_corrected = y[j] - y_shift
+			for i in range(len(master_x)):
+				for it_no in range(100):
+					if x_corrected + it_no == master_x[i]:
+						check11 = True
+
+					elif x_corrected - it_no == master_x[i]:
+						check11 = True
+
+					if y_corrected + it_no == master_y[i]:
+						check22 = True
+
+					elif y_corrected - it_no == master_y[i]:
+						check22 = True
+
+					if check11 == True and check22 == True: 
+						radius[j] = master_radius[i]
+						
+					check11 = False
+					check22 = False
+		print y, x
+		print y_shift, x_shift
 
 		
 		#calculate for fluxes of each star now using the corrected radii
@@ -421,12 +454,12 @@ for file_nr,fitfile in enumerate(fitfiles):
 		  		for n1 in numbers:
 					for n2 in numbers:
 						if dist(calx[i],caly[i],calx[i]+n1,caly[i]+n2) <= calrad[i]:
-							total+=dataset[calx[i]+n1,caly[i]+n2]
+							total+=dataset[calx[i]+x_shift+n1,caly[i]+y_shift+n2]
 		
 			cal_total_flux.append(total)
 			total=0.
-		median_cal_total_flux = np.median(cal_total_flux)
-		print median_cal_total_flux
+		sum_cal_total_flux = np.sum(cal_total_flux)
+		
 
 
 
@@ -434,10 +467,12 @@ for file_nr,fitfile in enumerate(fitfiles):
 
 		 
 		#calibrate fluxes for each image by using every star as a calibrator
-
+		sum_total_flux = np.sum(total_flux)
+		
 		for i in range(len(total_flux)):
-			total_flux[i]=total_flux[i]/median_cal_total_flux
+			total_flux[i]=total_flux[i]/sum_cal_total_flux
 		print total_flux
+		
 			
 		
 
@@ -449,12 +484,15 @@ for file_nr,fitfile in enumerate(fitfiles):
 		with open('fluxes.csv','a')as fd:
 			writer=csv.writer(fd)
 			writer.writerow(time)
-		#print sum_elements
-		y_corr=[]
-		x_corr=[]
-		for i in range(len(x)):
-			x_corr.append(x[i] - x_shift)
-			y_corr.append(y[i] - y_shift)
+
+
+		#export the mask as fits file
+
+		#hdumask = pyfits.PrimaryHDU(mask)
+		#hdulistmask = pyfits.HDUList([hdumask])
+		#hdulistmask.writeto('mask%s.fits' % file_nr)
+		print radius
+
 
 
 		
