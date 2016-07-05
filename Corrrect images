@@ -41,7 +41,7 @@ list_flats_a=list(open(path_flats_a,"r"))
 n_flats_a=len(list_flats_a)
 
 
-path_data="data_rest.txt"
+path_data="test_data_rest.txt"
 list_data=list(open(path_data,"r"))
 n_data=len(list_data)
 
@@ -247,7 +247,7 @@ hdulist=pyfits.open(path) * 1
 header=hdulist[0].header
 final_mjd=Time([header["DATE-OBS"]+"T"+header["TIME-OBS"]],format="isot",scale="utc").mjd
 
-box = 201  #Boxgroesse ungerade waehlen!
+box = 201  #Choose Boxsize odd!
 radius = (box - 1) * 0.5
 over = 20
 
@@ -283,16 +283,17 @@ for i in range(n_data):
 	mjd.append(time_mjd)
 
 	if i==0:
-		first_mjd=time_mjd													
+		first_mjd=time_mjd								
 
 	# Define corrected darks and flats as well as their errors
-	corr_darks= median_darks_b + (median_darks_a - median_darks_b) * (time_mjd-first_mjd)/(final_mjd-first_mjd)
-	corr_darks_error=((((1-((time_mjd-first_mjd)/(final_mjd-first_mjd)))*median_darks_b_error)**2+(((time_mjd-first_mjd)/(final_mjd-first_mjd))*median_darks_a_error)**2)**0.5)*1
-	corr_flats= median_flats_b + (median_flats_a - median_flats_b) * (time_mjd-first_mjd)/(final_mjd-first_mjd)			
-	corr_flats_error=((((1-((time_mjd-first_mjd)/(final_mjd-first_mjd)))*median_flats_b_error)**2+(((time_mjd-first_mjd)/(final_mjd-first_mjd))*median_flats_a_error)**2)**0.5)*1
+	corr_darks= median_darks_b + (median_darks_a - median_darks_b) * (time_mjd-first_mjd)/(first_mjd)
+	corr_darks_error=((((1-((time_mjd-first_mjd)/(first_mjd)))*median_darks_b_error)**2+(((time_mjd-first_mjd)/(first_mjd))*median_darks_a_error)**2)**0.5)*1
+	corr_flats= median_flats_b + (median_flats_a - median_flats_b) * (time_mjd-first_mjd)/(first_mjd)			
+	corr_flats_error=((((1-((time_mjd-first_mjd)/(first_mjd)))*median_flats_b_error)**2+(((time_mjd-first_mjd)/(first_mjd))*median_flats_a_error)**2)**0.5)*1
 
 	# Correct the dataset for darks and flats and propagate the error
-	dataset = (dataset - corr_darks) / corr_flats
+	dataset = (dataset - corr_darks) / (corr_flats - corr_darks)
+	dataset=dataset * np.average(corr_flats-corr_darks)
 	dataset_error=((1/corr_flats)*(dataset_error**2 + corr_darks_error**2 + (dataset*corr_flats_error)**2)**0.5)*1
 	dataset = extrapolate(dataset, 1654, 160)
 	dataset = extrapolate(dataset, 681, 3476)
@@ -317,9 +318,9 @@ for i in range(n_data):
 		bias_image = bias_image * 0.
 
 
-		# Boxgroesse und Overlap definieren
+		# define Boxsize and Overlap
 
-		#box = 201  #Boxgroesse ungerade waehlen!
+		#box = 201  #Choose Boxsize odd!
 		#radius = (box - 1) * 0.5
 		#over = 20
 		checkdist = box * 3.
@@ -331,14 +332,14 @@ for i in range(n_data):
 		median_value=[]
 
 
-		# Anzahl der Boxen berechnen:
+		# Calculate number of boxes:
 
 		nx_box = int(((x_size - box)/(box - over) + 1)) *1
 		ny_box = int(((y_size - box)/(box - over) + 1)) *1
 
 
 
-		# For loop ueber alle Boxen - Mediane der Boxen berechnen und den Mittelpunkt auf diesen Wert setzen:
+		# For loop over all boxes - medians of boxing calculate and set the focus to this value:
 		for j in range(ny_box):
 			for i in range(nx_box):
 
@@ -431,7 +432,7 @@ for i in range(n_data):
 			elif x < min_y:
 				min_y = int(y) *1
 
-		# Vorbereitung fuer das Fuellen des bias-image
+		# Preparation for the Fill the bias image
 
 		condition=True
 		current_point = [0,min_y,min_x]
@@ -448,7 +449,7 @@ for i in range(n_data):
 		thirdp=[0,0,0]
 		fourthp=[0,0,0]
 
-		#While-Schleife fuellt das bias-image:
+		#While-Loop fills in the bias - image:
 
 		while condition:
 			secondpoint[1]=current_point[1] 
@@ -578,7 +579,7 @@ for i in range(n_data):
 	# Substract bias from the data
 	dataset = dataset - bias_image
 	
-	# Aeussere Pixel abschneiden, da das bias_image nur das Zentrum modelliert
+	# Cut Aeussere pixels because the bias_image only the center modeled
 	x3list = range(0,x_size)
 	y3list = range(0,y_size)
 	for x3 in x3list:
