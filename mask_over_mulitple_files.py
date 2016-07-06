@@ -1,7 +1,9 @@
 #====================================================
 #This script is used to find the total luminosity of each star in a group of images of the same star #field. It then outputs a csv file with the luminosity vs time tables for each star detected. From there, you can graph them and use their graphs to search for any exoplanets. 
 #Prepare a list ('cor_Data.txt') of your images that have already been corrected for darks and #flats.
-#Run this script in the folder of target images!!
+#Create a folder titled "results" in the folder where this python is located. Your resulting CSV tables will be placed in there.
+#Run this script in the folder of target images!
+#Once the run is complete, you can read the fluxes of each star in the CSV file titled "lists_fluxes_per_star.csv" and the time for each flux in the file titled " flux_times.csv". Each star is represent
 #====================================================
 
 #====================================================
@@ -81,7 +83,7 @@ def get_next_pos(master_table_var,shift_y,shift_x,it_max,y1,x1,radius,flux,maste
 
 #define function that creates a list of fluxes over time per star
 
-def flux_tables(shift_y,shift_x,it_max,y1,x1,flux,master_ident,master_y1,master_x1,time):
+def flux_tables(shift_y,shift_x,it_max,y1,x1,flux,master_ident,master_y1,master_x1,time,radius):
 	y_corr=int(y1-shift_y)
 	x_corr=int(x1-shift_x) 
 	y_new = 1000.
@@ -110,43 +112,10 @@ def flux_tables(shift_y,shift_x,it_max,y1,x1,flux,master_ident,master_y1,master_
 		if check1 == True and check2 == True:
 			star_fluxes[i].append(flux)
 			flux_time[i].append(time)
+			star_radii[i].append(radius)
 			
 			break
 
-#define function to set the radius of each star as a constant value
-def constant_radii(shift_y,shift_x,it_max,y1,x1,radius,master_ident,master_y1,master_x1,master_radius):
-	y_corr=int(y1-shift_y) * 1.
-	x_corr=int(x1-shift_x) * 1. 
-	y_new = 1000.
-	x_new = 1000.
-	check1= False
-	check2 = False
-	for j in range(len(master_x1)):
-		for it_no in range(it_max+1):
-			if y_corr + it_no == master_y1[j] and y_new == 1000.:
-				check1 = True
-				
-			elif y_corr - it_no == master_y1[j] and y_new == 1000.:
-				check1 = True
-
-			if x_corr + it_no == master_x1[j] and x_new == 1000.:
-				check2 = True
-				
-			elif x_corr - it_no == master_x1[j] and x_new == 1000.:
-				check2 = True
-				
-			if check1 == True and check2 == True:
-				radius == master_radius[j]
-
-				break
-
-		if check1 == True and check2 == True:
-			break
-
-		check1= False
-		check2 = False
-			
-	return radius
 
 
 
@@ -162,6 +131,7 @@ def dist(x, y, xx, yy):
 id_flux=[]
 star_fluxes= [[] for m in range(10000)]	
 flux_time= [[] for m in range(10000)]
+star_radii= [[] for m in range(10000)]
 
 #set a variable equal to your file#
 with open('cor_Data.txt') as f:
@@ -190,8 +160,8 @@ for file_nr,fitfile in enumerate(fitfiles):
 		
 		#make mask field all 0s#
 		mask=np.multiply(mask,0.0)
-		thrs = 10 * np.std(dataset)
-		
+		thrs = 7 * np.std(dataset)
+
 		
 		#define x and y values#
 		y_size=len(dataset)
@@ -285,9 +255,17 @@ for file_nr,fitfile in enumerate(fitfiles):
  					
  					radius.append(max(dist_array))
  					condition = False
-		#Radius checked with mask.fits file, they match up perfectly. Each y and x value are 1 			#pixel too small though due to the program default settings.
+		#Radius checked with mask.fits file, they match up perfectly.
+
 		for i in range(len(radius)):
-			radius[i] = radius[i] * 2
+			radius[i] = radius[i] * 2.3
+			radius[i] = int(round(radius[i]))
+
+
+
+		#resultant radii will have decimal points, round them to nearest integer.
+		for i in range(len(radius)):
+			radius[i] = int(round(radius[i]))
  		
 
 			
@@ -326,17 +304,22 @@ for file_nr,fitfile in enumerate(fitfiles):
 		
 			total_flux.append(total)
 			total=0.
-		
+	
 		total_flux=[j for j in total_flux if j != 0]	
   		#fluxes checked using ds9, they match up perfectly.
 	
 		if file_nr==0:
+			master_y=[]
+			master_x=[]
+			master_radius=[] 
+			master_flux=[]
 			#create master-table
 			master_id=range(len(x))
-			master_y=y * 1
-			master_x=x * 1
-			master_radius=radius * 1 
-			master_flux=total_flux * 1
+			for i in range(len(x)):
+				master_y.append(y[i] * 1)
+				master_x.append(x[i] * 1)
+				master_radius.append(radius[i] * 1) 
+				master_flux.append(total_flux[i] * 1)
 			sum_elements=[0] * len(master_x)
 			master_table=zip(master_id,master_y,master_x,master_radius,master_flux,sum_elements)			
 			max_flux = 0.
@@ -364,34 +347,34 @@ for file_nr,fitfile in enumerate(fitfiles):
 			x_shift = x_zerop_n-x_zerop
 		
 		#change the radius list for file_nr != 0 so that the same stars detected before have 			#the same radius. We do this so that fluxuations in the radius of the same star does 			#not cause any fluctiations in the fluxes.
-		#for i in range(len(x)):
-			#constant_radii(y_shift,x_shift,10,y[i],x[i],radius[i],master_id,master_y,master_x,master_radius)
+
+		print radius
 		check11 = False
 		check22 = False
 		for j in range(len(x)):
 			x_corrected = x[j] - x_shift
 			y_corrected = y[j] - y_shift
 			for i in range(len(master_x)):
-				for it_no in range(100):
-					if x_corrected + it_no == master_x[i]:
+				for it_no in range(11):
+					if x_corrected + it_no == master_x[i] and check11 == False:
 						check11 = True
-
-					elif x_corrected - it_no == master_x[i]:
+					elif x_corrected - it_no == master_x[i] and check11 == False:
 						check11 = True
-
-					if y_corrected + it_no == master_y[i]:
+					if y_corrected + it_no == master_y[i] and check22 == False:
 						check22 = True
-
-					elif y_corrected - it_no == master_y[i]:
+					elif y_corrected - it_no == master_y[i] and check22 == False:
 						check22 = True
-
 					if check11 == True and check22 == True: 
-						radius[j] = master_radius[i]
-						
-					check11 = False
-					check22 = False
-		print y, x
-		print y_shift, x_shift
+						radius[j] = master_radius[i]				
+	
+				check11 = False
+				check22 = False
+
+			
+		print master_radius
+		print radius
+		print y 
+		print x
 
 		
 		#calculate for fluxes of each star now using the corrected radii
@@ -444,7 +427,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 			calx = x
 			calrad = radius
 
-		#calculate for fluxes of each star
+		#calculate for fluxes of each star that shows up in the first image. We then use the 			#sum# of these fluxes for each image to calibrate the fluxes for each image
 		cal_total_flux=[]
 		total=0.
 		
@@ -459,6 +442,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 			cal_total_flux.append(total)
 			total=0.
 		sum_cal_total_flux = np.sum(cal_total_flux)
+		#print cal_total_flux
 		
 
 
@@ -466,18 +450,18 @@ for file_nr,fitfile in enumerate(fitfiles):
 
 
 		 
-		#calibrate fluxes for each image by using every star as a calibrator
-		sum_total_flux = np.sum(total_flux)
+		#calibrate fluxes for each image by dividing the fluxes by the sum from above
+		sum_total_flux = np.median(total_flux)
 		
 		for i in range(len(total_flux)):
 			total_flux[i]=total_flux[i]/sum_cal_total_flux
-		print total_flux
+		#print total_flux
 		
 			
 		
 
 		for i in range(len(y)):		
-			flux_tables(y_shift,x_shift,10,y[i],x[i],total_flux[i],master_id,master_y,master_x,time)
+			flux_tables(y_shift,x_shift,10,y[i],x[i],total_flux[i],master_id,master_y,master_x,time,radius[i])
 
 			
 		#write the x, y, radius, and flux values for each fits file onto a csv file	
@@ -491,7 +475,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 		#hdumask = pyfits.PrimaryHDU(mask)
 		#hdulistmask = pyfits.HDUList([hdumask])
 		#hdulistmask.writeto('mask%s.fits' % file_nr)
-		print radius
+		#print radius
 
 
 
@@ -510,22 +494,30 @@ corr_flux_times = []
 for i in range(len(flux_time)):
 	if len(flux_time[i]) > 3:
 		corr_flux_times.append(flux_time[i])
+corr_star_radii = []
+for i in range(len(star_radii)):
+	if len(star_radii[i]) > 3:
+		corr_star_radii.append(star_radii[i])
 
 master_table = zip(master_id,master_y,master_x,master_radius,master_flux,sum_elements)
 
 
 #write the master table of the x values, y values, radii, and fluxes into a csv file	
-with open('master_table.csv','a')as fd:
+with open('./results/master_table.csv','a')as fd:
 	writer=csv.writer(fd)
 	for val in master_table:
 		writer.writerow(val)
-with open('lists_fluxes_per_star.csv','a')as fd:
+with open('./results/lists_fluxes_per_star.csv','a')as fd:
 	writer=csv.writer(fd)
 	for val in corr_star_fluxes:
 		writer.writerow(val)
-with open('flux_times.csv','a')as fd:
+with open('./results/flux_times.csv','a')as fd:
 	writer=csv.writer(fd)
 	for val in corr_flux_times:
+		writer.writerow(val)
+with open('./results/star_radii.csv','a')as fd:
+	writer=csv.writer(fd)
+	for val in corr_star_radii:
 		writer.writerow(val)
 
 
