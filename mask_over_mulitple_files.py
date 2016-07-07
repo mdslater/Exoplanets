@@ -160,7 +160,8 @@ for file_nr,fitfile in enumerate(fitfiles):
 		
 		#make mask field all 0s#
 		mask=np.multiply(mask,0.0)
-		thrs = 7 * np.std(dataset)
+		thrs = 165
+		
 
 		
 		#define x and y values#
