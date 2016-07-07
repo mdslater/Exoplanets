@@ -19,6 +19,7 @@ import pyfits
 import os
 import numpy as np
 from astropy.time import Time
+import math
 
 #====================================================
 #     Loading absolute and temporary variables 
@@ -119,6 +120,9 @@ def triangular (r1, r2, r3, x, y,*print_check):
 
 
 	return val
+
+
+
 
 
 
@@ -292,8 +296,7 @@ for i in range(n_data):
 	corr_flats_error=((((1-((time_mjd-first_mjd)/(first_mjd)))*median_flats_b_error)**2+(((time_mjd-first_mjd)/(first_mjd))*median_flats_a_error)**2)**0.5)*1
 
 	# Correct the dataset for darks and flats and propagate the error
-	dataset = (dataset - corr_darks) / (corr_flats - corr_darks)
-	dataset=dataset * np.average(corr_flats-corr_darks)
+	dataset = ((dataset - corr_darks) * (np.average(corr_flats - corr_darks)))/ (corr_flats - corr_darks)
 	dataset_error=((1/corr_flats)*(dataset_error**2 + corr_darks_error**2 + (dataset*corr_flats_error)**2)**0.5)*1
 	dataset = extrapolate(dataset, 1654, 160)
 	dataset = extrapolate(dataset, 681, 3476)
@@ -577,8 +580,15 @@ for i in range(n_data):
 		pyfits.writeto(bias_path,bias_image,new_head_b)
 
 	# Substract bias from the data
-	dataset = dataset - bias_image
+	y_size=len(bias_image)
+	x_size=len(bias_image[0])
 	
+	for y in range(y_size):
+		for x in range(x_size):
+			if bias_image[y,x] == 0:
+				bias_image[y,x] = 1
+	dataset = (dataset) * (np.average(bias_image)) / (bias_image)
+
 	# Cut Aeussere pixels because the bias_image only the center modeled
 	x3list = range(0,x_size)
 	y3list = range(0,y_size)
