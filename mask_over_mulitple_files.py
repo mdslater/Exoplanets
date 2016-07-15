@@ -349,7 +349,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 		
 		#change the radius list for file_nr != 0 so that the same stars detected before have 			#the same radius. We do this so that fluxuations in the radius of the same star does 			#not cause any fluctiations in the fluxes.
 
-		print radius
+
 		check11 = False
 		check22 = False
 		for j in range(len(x)):
@@ -372,10 +372,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 				check22 = False
 
 			
-		print master_radius
-		print radius
-		print y 
-		print x
+
 
 		
 		#calculate for fluxes of each star now using the corrected radii
@@ -403,12 +400,12 @@ for file_nr,fitfile in enumerate(fitfiles):
 
 
 		#get time and date for each file
+		mjd=[]
 		time=[]
 		date=[]
 		time.append(header["TIME-OBS"])
 		date.append(header["DATE-OBS"])
-		for i in range(len(time)):		
-			time.insert(0,date[0])
+		mjd=zip(time,date)
 
 
 
@@ -428,7 +425,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 			calx = x
 			calrad = radius
 
-		#calculate for fluxes of each star that shows up in the first image. We then use the 			#sum# of these fluxes for each image to calibrate the fluxes for each image
+		#calculate for fluxes of each star that shows up in the first image. We then use the 			#sum of these fluxes for each image to calibrate the fluxes for each image
 		cal_total_flux=[]
 		total=0.
 		
@@ -443,7 +440,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 			cal_total_flux.append(total)
 			total=0.
 		sum_cal_total_flux = np.sum(cal_total_flux)
-		#print cal_total_flux
+
 		
 
 
@@ -456,7 +453,7 @@ for file_nr,fitfile in enumerate(fitfiles):
 		
 		for i in range(len(total_flux)):
 			total_flux[i]=total_flux[i]/sum_cal_total_flux
-		#print total_flux
+
 		
 			
 		
@@ -464,20 +461,18 @@ for file_nr,fitfile in enumerate(fitfiles):
 		for i in range(len(y)):		
 			flux_tables(y_shift,x_shift,10,y[i],x[i],total_flux[i],master_id,master_y,master_x,time,radius[i])
 
-			
-		#write the x, y, radius, and flux values for each fits file onto a csv file	
-		with open('fluxes.csv','a')as fd:
+
+		with open('./results/y,x,radii,flux.csv','a')as fd:
 			writer=csv.writer(fd)
-			writer.writerow(time)
-
-
-		#export the mask as fits file
-
-		#hdumask = pyfits.PrimaryHDU(mask)
-		#hdulistmask = pyfits.HDUList([hdumask])
-		#hdulistmask.writeto('mask%s.fits' % file_nr)
-		#print radius
-
+			for val in mjd:
+				writer.writerow(val)
+		image_info = zip(y,x,radius,total_flux)
+		with open('./results/y,x,radii,flux.csv','a')as fd:
+			writer=csv.writer(fd)
+			for val in image_info:
+				writer.writerow(val)
+		
+	
 
 
 		
@@ -501,7 +496,6 @@ for i in range(len(star_radii)):
 		corr_star_radii.append(star_radii[i])
 
 master_table = zip(master_id,master_y,master_x,master_radius,master_flux,sum_elements)
-
 
 #write the master table of the x values, y values, radii, and fluxes into a csv file	
 with open('./results/master_table.csv','a')as fd:
