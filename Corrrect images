@@ -42,7 +42,7 @@ list_flats_a=list(open(path_flats_a,"r"))
 n_flats_a=len(list_flats_a)
 
 
-path_data="test_data_rest.txt"
+path_data="data_rest.txt"
 list_data=list(open(path_data,"r"))
 n_data=len(list_data)
 
@@ -275,6 +275,10 @@ for i in range(n_data):
 	#header=hdulist[0].header *1
 	header=hdulist[0].header
 	exp_time=header["EXPTIME"]
+
+	print exp_time
+	print exp_time_flats
+	print exp_time_darks
 
 	# Define Error of the original dataset
 	dataset_error=(dataset**0.5)*1
